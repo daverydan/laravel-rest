@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use App\User; // davery
 use App\Http\Requests;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -20,20 +20,31 @@ class AuthController extends Controller
     $email = $request->input('email');
     $password = $request->input('password');
 
-    $user = [
+    $user = new User([
       'name' => $name,
       'email' => $email,
-      'password' => $password,
-      'signin' => [
+      'password' => bcrypt($password)
+    ]);
+
+    // if save
+    if ($user->save()) {
+      $user->signin = [
         'href' => 'api/v1/user/signin',
         'method' => 'POST',
         'params' => 'email, password'
-      ]
-    ];
+      ];
 
+      $response = [
+        'msg' => 'User created',
+        'user' => $user
+      ];
+
+      return response()->json($response, 404);
+    }
+
+    // if not save
     $response = [
-      'msg' => 'User created',
-      'user' => $user
+      'msg' => 'An error occurred',
     ];
 
     return response()->json($response, 201);

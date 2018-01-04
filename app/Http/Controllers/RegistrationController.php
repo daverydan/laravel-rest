@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use App\User; // davery
+use App\Meeting; // davery
 use App\Http\Requests;
+use Illuminate\Http\Request;
 
 class RegistrationController extends Controller
 {
@@ -24,28 +25,32 @@ class RegistrationController extends Controller
       $meeting_id = $request->input('meeting_id');
       $user_id = $request->input('user_id');
 
-      $meeting = [
-        'title' => 'Title',
-        'description' => 'Description',
-        'time' => 'Time',
-        'view_meeting' => [
-          'href' => 'api/v1/meeting/1',
-          'method' => 'GET'
-        ]
-      ];
+      $meeting = Meeting::findOrFail($meeting_id);
+      $user = User::findOrFail($user_id);
 
-      $user = [
-        'name' => 'Name'
+      $message = [
+          'msg' => 'User is already registered for meeting',
+          'user' => $user,
+          'meeting' => $meeting,
+          'unregister' => [
+              'href' => 'api/v1/meeting/registration/' . $meeting->id,
+              'method' => 'DELETE',
+          ]
       ];
+      if ($meeting->users()->where('users.id', $user->id)->first()) {
+          return response()->json($message, 404);
+      };
+
+      $user->meetings()->attach($meeting);
 
       $response = [
-        'msg' => 'User registered for meeting',
-        'meeting' => $meeting,
-        'user' => $user,
-        'unregister' => [
-          'href' => 'api/v1/meeting/registration/1',
-          'method' => 'DELETE'
-        ]
+          'msg' => 'User registered for meeting',
+          'meeting' => $meeting,
+          'user' => $user,
+          'unregister' => [
+              'href' => 'api/v1/meeting/registration/' . $meeting->id,
+              'method' => 'DELETE'
+          ]
       ];
 
       return response()->json($response, 201);
@@ -59,29 +64,18 @@ class RegistrationController extends Controller
      */
     public function destroy($id)
     {
-      $meeting = [
-        'title' => 'Title',
-        'description' => 'Description',
-        'time' => 'Time',
-        'view_meeting' => [
-          'href' => 'api/v1/meeting/1',
-          'method' => 'GET'
-        ]
-      ];
-
-      $user = [
-        'name' => 'Name'
-      ];
+      $meeting = Meeting::findOrFail($id);
+      $meeting->users()->detach();
 
       $response = [
-        'msg' => 'User unregistered from meeting',
-        'meeting' => $meeting,
-        'user' => $user,
-        'register' => [
-          'href' => 'api/v1/meeting/registration',
-          'method' => 'POST',
-          'params' => 'user_id, meeting_id'
-        ]
+          'msg' => 'User unregistered for meeting',
+          'meeting' => $meeting,
+          'user' => 'tbd',
+          'register' => [
+              'href' => 'api/v1/meeting/registration',
+              'method' => 'POST',
+              'params' => 'user_id, meeting_id'
+          ]
       ];
 
       return response()->json($response, 200);
